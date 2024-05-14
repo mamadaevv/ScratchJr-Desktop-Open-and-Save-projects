@@ -2,6 +2,8 @@ import {gn} from '../utils/lib';
 import Localization from '../utils/Localization';
 import iOS from '../iPad/iOS';
 import Lobby from '../lobby/Lobby';
+import {ipcMain, remote} from "electron";
+import FileHandler from "../../fileHandler";
 
 export function homeMain () {  // eslint-disable-line import/prefer-default-export
     gn('logotab').onmousedown = homeGoBack;
@@ -12,6 +14,7 @@ export function homeMain () {  // eslint-disable-line import/prefer-default-expo
         iOS.path = list[1] == '0' ? list[0] + '/' : undefined;
         Lobby.appinit(window.Settings.scratchJrVersion);
     }
+
 }
 
 function homeGoBack () {

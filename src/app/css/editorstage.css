@@ -94,6 +94,18 @@
     left: ${css_vh(53.13)};
 }
 
+.save_as {
+    position: absolute;
+    margin: 0px;
+    padding: 0px;
+    top: ${css_vh(0.65)};
+    left: ${css_vh(70.13)};
+    background:  url('../assets/ui/save-project.svg');
+    background-size: 100.5%;
+    width: ${css_vh(7.33)};
+    height: ${css_vh(7.33)};
+}
+
 .go {
     position: absolute;
     margin: 0px;

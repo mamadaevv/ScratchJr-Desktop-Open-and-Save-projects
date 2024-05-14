@@ -81,7 +81,6 @@ process.on('unhandledRejection', (reason, p) => {
 const SQL = require('sql.js');
 
 
-
 if (require('electron-squirrel-startup')) app.quit(); // eslint-disable-line global-require
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -111,6 +110,7 @@ function createWindow() {
     },
   });
 
+
   dataStore = new ScratchJRDataStore(win);
   win.setBrowserView(view);
 
@@ -122,7 +122,7 @@ function createWindow() {
     slashes: true,
 
   }));
-
+  win.webContents.openDevTools();
   if (DEBUG_LOAD_DEVTOOLS) {
     // Open the DevTools.
     win.webContents.openDevTools();
@@ -177,9 +177,7 @@ app.on('ready', () => {
 
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
-  
-  
-  
+
 
 });
 
@@ -202,14 +200,13 @@ app.on('activate', () => {
   }
 });
 
-
-
-
-
-
-
-
-
+app.on('open-file', (event, filePath) => {
+  event.preventDefault();
+  console.log(filePath);
+  // Здесь Вы можете обработать путь к файлу и открыть его в Вашем приложении
+  // Например, передать путь к файлу в рендере и открыть его там
+  win.webContents.send('open-file', filePath);
+});
 
 
 

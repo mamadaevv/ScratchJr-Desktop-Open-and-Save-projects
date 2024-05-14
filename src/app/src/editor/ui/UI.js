@@ -22,6 +22,9 @@ import Localization from '../../utils/Localization';
 import ScratchAudio from '../../utils/ScratchAudio';
 import {frame, gn, CSSTransition, localx, newHTML, scaleMultiplier, getIdFor, isTablet, newDiv,
     newTextInput, isAndroid, getDocumentWidth, getDocumentHeight, setProps, globalx} from '../../utils/lib';
+import {remote} from "electron";
+import fs from "fs";
+import FileHandler from "../../../fileHandler";
 
 let projectNameTextInput = null;
 let info = null;
@@ -32,7 +35,7 @@ export default class UI {
     static get infoBoxOpen () {
         return infoBoxOpen;
     }
-    
+
     static layout () {
         UI.topSection();
         UI.middleSection();
@@ -668,7 +671,7 @@ export default class UI {
         }
         if (ScratchJr.isEditable() && ScratchJr.getSprite() &&
             (((t.className == 'sname') && (el.owner == ScratchJr.getSprite().id))
-            || (t.className == 'brush'))) {
+                || (t.className == 'brush'))) {
             UI.putInPaintEditor(e);
             return;
         }
@@ -706,6 +709,7 @@ export default class UI {
         UI.creatTopBarClicky(div, 'go', 'go on', UI.toggleRun);
         UI.creatTopBarClicky(div, 'resetall', 'resetall', UI.resetAllSprites);
         UI.creatTopBarClicky(div, 'full', 'fullscreen', ScratchJr.fullScreen);
+        UI.creatTopBarClicky(div, 'save_project_as', 'save_as', FileHandler.saveProjectAs);
         UI.toggleGrid(true);
     }
 

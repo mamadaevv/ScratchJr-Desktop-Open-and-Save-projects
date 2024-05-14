@@ -10,6 +10,7 @@ import Localization from '../utils/Localization';
 import ScratchAudio from '../utils/ScratchAudio';
 import Vector from '../geom/Vector';
 import {gn, newHTML, isTablet} from '../utils/lib';
+import FileHandler from "../../fileHandler";
 
 let frame;
 let scrollvalue;
@@ -36,6 +37,12 @@ export default class Home {
         var tb = newHTML('div', 'projectthumb', parent);
         newHTML('div', 'aproject empty', tb);
         tb.id = 'newproject';
+    }
+
+    static openProjectThumbnail (parent) {
+        var tb = newHTML('div', 'projectthumb', parent);
+        newHTML('div', 'aproject open', tb);
+        tb.id = 'openproject';
     }
 
     //////////////////////////
@@ -130,30 +137,34 @@ export default class Home {
         }
         var md5 = Home.actionTarget.id;
         switch (Home.getAction(e)) {
-        case 'project':
-            ScratchAudio.sndFX('keydown.wav');
-            if (md5 && (md5 == 'newproject')) {
-                Home.createNewProject();
-            } else if (md5) {
-                iOS.setfile('homescroll.sjr', gn('wrapc').scrollTop, function () {
-                    doNext(md5);
-                });
-            }
-            break;
-        case 'delete':
-            ScratchAudio.sndFX('cut.wav');
-            Project.thumbnailUnique(Home.actionTarget.thumb, Home.actionTarget.id, function (isUnique) {
-                if (isUnique) {
-                    iOS.remove(Home.actionTarget.thumb, iOS.trace);
+            case 'project':
+                ScratchAudio.sndFX('keydown.wav');
+                if (md5 && (md5 == 'newproject')) {
+                    Home.createNewProject();
+                } else if (md5 && (md5 == 'openproject')) {
+                    setTimeout(() => {
+                        FileHandler.openProjectFromFile();
+                    }, 70);
+                } else if (md5) {
+                    iOS.setfile('homescroll.sjr', gn('wrapc').scrollTop, function () {
+                        doNext(md5);
+                    });
                 }
-            });
-            iOS.setfield(iOS.database, Home.actionTarget.id, 'deleted', 'YES', Home.removeProjThumb);
-            break;
-        default:
-            if (Home.actionTarget && (Home.actionTarget.childElementCount > 2)) {
-                Home.actionTarget.childNodes[Home.actionTarget.childElementCount - 1].style.visibility = 'hidden';
-            }
-            break;
+                break;
+            case 'delete':
+                ScratchAudio.sndFX('cut.wav');
+                Project.thumbnailUnique(Home.actionTarget.thumb, Home.actionTarget.id, function (isUnique) {
+                    if (isUnique) {
+                        iOS.remove(Home.actionTarget.thumb, iOS.trace);
+                    }
+                });
+                iOS.setfield(iOS.database, Home.actionTarget.id, 'deleted', 'YES', Home.removeProjThumb);
+                break;
+            default:
+                if (Home.actionTarget && (Home.actionTarget.childElementCount > 2)) {
+                    Home.actionTarget.childNodes[Home.actionTarget.childElementCount - 1].style.visibility = 'hidden';
+                }
+                break;
         }
         function doNext () {
             iOS.analyticsEvent('lobby', 'existing_project_edited');
@@ -185,7 +196,7 @@ export default class Home {
         var pn = [];
         var div = gn('scrollarea');
         for (var i = 0; i < div.childElementCount; i++) {
-            if (div.childNodes[i].id == 'newproject') {
+            if (div.childNodes[i].id == 'newproject' || div.childNodes[i].id == 'openproject') {
                 continue;
             }
             pn.push(div.childNodes[i].childNodes[1].childNodes[0].textContent);
@@ -250,6 +261,7 @@ export default class Home {
             div.removeChild(div.childNodes[0]);
         }
         Home.emptyProjectThumbnail(div);
+        Home.openProjectThumbnail(div);
         for (var i = 0; i < data.length; i++) {
             Home.addProjectLink(div, data[i]);
         }
@@ -326,4 +338,7 @@ class Events {
             y: e.clientY
         };
     }
+}
+
+export class prepareOpenedFile {
 }
