@@ -377,6 +377,7 @@ export default class ScratchJr {
         onHold = true;
         ScratchJr.stopStripsFromTop(e);
         ScratchJr.unfocus(e);
+        Project.save();
         ScratchJr.saveProject(e, ScratchJr.flippage);
     }
 

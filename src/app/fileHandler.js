@@ -4,8 +4,7 @@ import IO from './src/iPad/IO';
 import ScratchJr from './src/editor/ScratchJr';
 import ScratchAudio from './src/utils/ScratchAudio';
 import Project from './src/editor/ui/Project';
-import {gn} from './src/utils/lib';
-import iOS from './src/iPad/iOS';
+import Home from './src/lobby/Home';
 
 export default class FileHandler {
 
@@ -39,7 +38,7 @@ export default class FileHandler {
                 openedProject.thumbnail = JSON.parse(openedProject.thumbnail);
             }
 
-            IO.createProject(openedProject, FileHandler.gotoEditor);
+            IO.createProject(openedProject, Home.gotoEditor);
             ScratchJr.saveProject();
         });
     }
@@ -68,14 +67,5 @@ export default class FileHandler {
 
             fs.writeFileSync(filePath, JSON.stringify(data), 'utf-8');
         });
-    }
-
-    static gotoEditor (md5) {
-        iOS.setfile('homescroll.sjr', gn('wrapc').scrollTop, function () {
-            doNext(md5);
-        });
-        function doNext (md5) {
-            window.location.href = 'editor.html?pmd5=' + md5 + '&mode=edit';
-        }
     }
 }

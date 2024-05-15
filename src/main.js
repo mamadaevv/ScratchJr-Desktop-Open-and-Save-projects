@@ -122,7 +122,6 @@ function createWindow() {
     slashes: true,
 
   }));
-  win.webContents.openDevTools();
   if (DEBUG_LOAD_DEVTOOLS) {
     // Open the DevTools.
     win.webContents.openDevTools();

@@ -461,6 +461,7 @@ export default class Project {
 
         function savePNG (md5, pngBase64) {
             var filename = ScratchJr.currentProject + '_' + md5;
+            Project.metadata.id = ScratchJr.currentProject;
             iOS.setmedianame(pngBase64, filename, 'png', doNext);
         }
 

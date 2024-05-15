@@ -10,6 +10,8 @@ import {homeMain} from './src/entry/home.js';
 import {editorMain} from './src/entry/editor.js';
 import {gettingStartedMain} from './src/entry/gettingstarted.js';
 import {inappInterfaceGuide, inappAbout, inappBlocksGuide, inappPaintEditorGuide} from './src/entry/inapp.js';
+import {remote} from "electron";
+import FileHandler from "./fileHandler";
 
 function loadSettings (settingsRoot, whenDone) {
 	IO.requestFromServer(settingsRoot + 'settings.json', (result) => {
@@ -113,5 +115,12 @@ function loadPage(page) {
 		// Initialize currentUsage data
 		AppUsage.initUsage();
 	});
+
+	if (sessionStorage.getItem('isFirstStart') == null) {
+		if (remote.process.argv[1].length > 1) {
+			sessionStorage.setItem('isFirstStart', false);
+			FileHandler.prepareOpenedFile(remote.process.argv[1]);
+		}
+	}
 }
 

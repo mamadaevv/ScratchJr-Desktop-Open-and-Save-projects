@@ -144,7 +144,7 @@ export default class Home {
                 } else if (md5 && (md5 == 'openproject')) {
                     setTimeout(() => {
                         FileHandler.openProjectFromFile();
-                    }, 70);
+                    }, 150);
                 } else if (md5) {
                     iOS.setfile('homescroll.sjr', gn('wrapc').scrollTop, function () {
                         doNext(md5);
@@ -183,7 +183,7 @@ export default class Home {
     }
 
     static gotoEditor (md5) {
-        iOS.setfile('homescroll.sjr', gn('wrapc').scrollTop, function () {
+        iOS.setfile('homescroll.sjr', gn('wrapc') ? gn('wrapc').scrollTop : 0, function () {
             doNext(md5);
         });
         function doNext (md5) {
@@ -309,10 +309,12 @@ export default class Home {
     static insertThumbnail (p, w, h, data) {
         var md5 = data.md5;
         var img = newHTML('img', undefined, p);
+
         if (md5) {
             IO.getAsset(md5, drawMe);
         }
         function drawMe (url) {
+            console.log(url);
             img.src = url;
         }
     }
