@@ -5,6 +5,7 @@ import ScratchJr from './src/editor/ScratchJr';
 import ScratchAudio from './src/utils/ScratchAudio';
 import Project from './src/editor/ui/Project';
 import Home from './src/lobby/Home';
+import iOS from './src/iPad/iOS';
 
 export default class FileHandler {
 
@@ -21,7 +22,7 @@ export default class FileHandler {
             if (!filePath) {
                 return;
             }
-            FileHandler.prepareOpenedFile(filePath[0]);
+            this.prepareOpenedFile(filePath[0]);
         });
     }
 
@@ -30,13 +31,29 @@ export default class FileHandler {
             if (err) {
                 return;
             }
-            var openedProject = JSON.parse(data);
+            var openedFile = JSON.parse(data)
+            console.log(openedFile)
+        
+            var openedProject = openedFile.project;
             if (typeof openedProject.json === 'string') {
                 openedProject.json = JSON.parse(openedProject.json);
             }
             if (typeof openedProject.thumbnail === 'string') {
                 openedProject.thumbnail = JSON.parse(openedProject.thumbnail);
             }
+
+
+            for (let i = 0; i < openedFile.projectfiles.length; i++) {
+                var json = {};
+                var keylist = ['MD5', 'CONTENTS'];
+                var values = '?,?';
+                json.values = [openedFile.projectfiles[i].MD5, openedFile.projectfiles[i].CONTENTS];
+        
+                json.stmt = 'insert into PROJECTFILES (' + keylist.toString() + ') values (' + values + ')';
+                iOS.stmt(json);
+            }
+
+
 
             IO.createProject(openedProject, Home.gotoEditor);
             ScratchJr.saveProject();
@@ -65,7 +82,45 @@ export default class FileHandler {
             }
             let data = Project.metadata;
 
-            fs.writeFileSync(filePath, JSON.stringify(data), 'utf-8');
+            const projectData = JSON.parse(data.json)
+          
+            let projectfiles = []
+            for (var pageData in projectData) {
+                
+                console.log(projectData[pageData])
+
+                if (projectData[pageData].md5 == undefined) {
+                    continue;
+                }
+                getMD5Content(projectData[pageData].md5)
+                
+                for (var pageValues in projectData[pageData]) {
+                    console.log(pageValues + ": " + JSON.stringify(projectData[pageData][pageValues]));
+               
+                    if (projectData[pageData][pageValues].md5 == undefined) {
+                        continue;
+                    }
+                
+                    getMD5Content(projectData[pageData][pageValues].md5);
+                }
+    
+                function getMD5Content(md5) {
+                    const json = {};
+                    json.stmt = `select * from PROJECTFILES where MD5='${md5}'`;
+                    
+                    function result (res) {
+                        let resObj = JSON.parse(res)
+                        console.log(resObj)
+                        if (resObj.length > 0) {
+                            projectfiles.push({MD5: resObj[0].MD5, CONTENTS: resObj[0].CONTENTS})
+                        }
+                    }
+                
+                    iOS.query(json, result);
+                }
+    
+            }
+            fs.writeFileSync(filePath, JSON.stringify({project:data, projectfiles:projectfiles}), 'utf-8');
         });
     }
 }
