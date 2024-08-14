@@ -135,6 +135,7 @@ export default class Ghost {
             break;
         case 'paintbucket':
         case 'camera':
+        case 'image':
             mt = Ghost.getHitObject(pt, Paint.mode == 'path');
             break;
         }

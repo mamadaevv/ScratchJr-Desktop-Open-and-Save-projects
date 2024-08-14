@@ -10,23 +10,28 @@
     background-size: 100.5%; /* webview pixelates the image unless we do this */
     width: ${css_vh(29.95)};
     height: ${css_vh(8.20)};
+	background-position: center;
+    background-repeat: no-repeat;
 }
 
 .flipme:active {
     background:  url('../assets/ui/fliplogoPressed.svg');
     background-size: 100.5%;  /* webview pixelates the image unless we do this */
+	background-position: center;
+    background-repeat: no-repeat;
 }
 
 .scrollbar {
     position: absolute;
-    display: inline-block;
+    display: none;
     margin: 0px;
     padding: 0px;
     top: 0px;
     left: ${css_vh(32.29)};
     width: ${css_vh(1.04)};
     height: ${css_vh(40.63)};
-    background: rgba(255,255,255,0.5);
+/*     background: rgba(255,255,255,0.5);
+ */
 }
 
 .scrollbar .sbthumb {
@@ -35,19 +40,20 @@
     padding: 0px;
     width: ${css_vh(1.04)};
     height: 0px;
-    background: #C9C9C9;
+/*     background: #C9C9C9;
+ */
 }
 
 .scrollbar.off { display: none;}
 
-.scrollbar.on {display: inline-block;}
+.scrollbar.on {display: none;}
 
 #library {
-    position: absolute;
-    display: inline-block;
+/*     position: absolute;
+ */    display: inline-block;
     margin: 0px;
     padding: 0px;
-    top: ${css_vh(9.38)};
+    margin-top: ${css_vh(9.38)};
     width: ${css_vh(33.85)};
     overflow-x: hidden;
 }
@@ -57,10 +63,12 @@
     margin: 0px;
     padding: 0px;
     display: block;
-    overflow-y: scroll;
-    overflow-x: hidden;
+    /* overflow-y: scroll;
+    overflow-x: hidden; */
+    overflow-y: unset;
+    overflow-x: unset;
     width: ${css_vh(33.85)};
-    max-height: ${css_vh(40.63)};
+    height: ${css_vh(40.63)};
 }
 
 .spritethumbs::-webkit-scrollbar {
@@ -68,15 +76,18 @@
 }
 
 #library .spritethumbs .spritecc{
-    position: relative;
-    margin: 0px ${css_vh(2.34)} 0px;
+/*     position: relative;
+ */    margin: 0px ${css_vh(2.34)} 0px;
     padding: 0px;
     width:  ${css_vh(29.95)};
+    display: inline-flex;
+    flex-direction: column-reverse;
 }
 
 #library .addsprite {
-    position: relative;
-    display: inline-block;
+    position: fixed;
+/*     position: relative;
+ */    display: inline-block;
     background:  url('../assets/ui/newsprite2.png') no-repeat left top;
     background-size: 100%;
     width:  ${css_vh(23.18)};

@@ -80,6 +80,8 @@ div.frame {
     background-size: 101%;
     padding: 0;
     margin: auto auto;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 #topbar ul.topbar-nav li.home {

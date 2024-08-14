@@ -80,7 +80,7 @@
     display: block;
     margin: ${css_vh(0.00)};
     padding: ${css_vh(0.00)};
-    width: ${css_vh(31.25)};
+    /* width: ${css_vh(31.25)}; */
     height: ${css_vh(8.46)};
 }
 

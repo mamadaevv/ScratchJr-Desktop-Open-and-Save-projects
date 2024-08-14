@@ -190,7 +190,7 @@ export default class SVGTools {
 
     static getPolyAttr () {
         return {
-            'fill': 'none',
+            'fill': 'transparent',
             'stroke': Paint.fillcolor,
             'stroke-width': Paint.strokewidth,
             'stroke-linecap': 'round',
@@ -201,7 +201,7 @@ export default class SVGTools {
 
     static getPenAttr () {
         return {
-            'fill': 'none',
+            'fill': 'transparent',
             'stroke': Paint.fillcolor,
             'stroke-width': Paint.strokewidth,
             'opacity': 1,
@@ -792,6 +792,7 @@ export default class SVGTools {
             return null;
         }
         if (elem.tagName == 'image') {
+            console.log('image')
             return null;
         }
         if (elem.tagName == 'clipPath') {

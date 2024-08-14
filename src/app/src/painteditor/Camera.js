@@ -10,6 +10,7 @@ import Rectangle from '../geom/Rectangle';
 import Layer from './Layer';
 import Ghost from './Ghost';
 import {gn, globalx, globaly, DEGTOR, setCanvasSize, isAndroid} from '../utils/lib';
+import PaintAction from './PaintAction';
 
 let view = 'front';
 let target;
@@ -24,12 +25,16 @@ export default class Camera {
         available = newAvailable;
     }
 
-    static startFeed (feedTarget) {
+    static startFeed (feedTarget, dontOpenCameraBackdrop) {
         ScratchAudio.sndFX('entertap.wav');
         if (!Paint.canvasFits()) {
             Paint.scaleToFit();
         }
         target = feedTarget;
+
+        if (dontOpenCameraBackdrop == null) {
+            target.setAttribute('fill', 'none')
+        }
         Camera.active = true;
         var devicePixelRatio = window.devicePixelRatio;
         var viewbox = SVGTools.getBox(target).rounded();
@@ -54,7 +59,9 @@ export default class Camera {
         data.mh = Paint.workspaceHeight;
         data.image = mask.toDataURL('image/png');
         iOS.startfeed(data, iOS.trace);
-        Paint.cameraToolsOn();
+
+        if (dontOpenCameraBackdrop == null)
+            Paint.cameraToolsOn();
     }
 
     static prepareForLandscapeMode (cnv) {
@@ -98,6 +105,9 @@ export default class Camera {
     }
 
     static close () {
+        if (target != undefined)
+            target.setAttribute('fill', 'transparent')
+            PaintAction.fingerDown(target);
         target = undefined;
         view = 'front';
         Camera.active = false;
@@ -105,7 +115,7 @@ export default class Camera {
         Paint.cameraToolsOff();
         if (isAndroid) {
             ScratchJr.onBackButtonCallback.pop();
-        }
+        } 
     }
 
     static snapShot () {

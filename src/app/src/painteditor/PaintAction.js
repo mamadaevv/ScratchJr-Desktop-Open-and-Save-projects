@@ -14,6 +14,7 @@ import Camera from './Camera';
 import Events from '../utils/Events';
 import Rectangle from '../geom/Rectangle';
 import {gn, isTablet, getIdFor} from '../utils/lib';
+import FileHandler from '../../fileHandler';
 /*
 Type of objects:
 - fixed: Only exists on Assets Backgrounds and can it only be fill (color or camera) or removed
@@ -626,6 +627,7 @@ export default class PaintAction {
             y: y + h
         }];
         var shape = Path.makeRectangle(currentShape.parentNode, pl);
+        shape.setAttribute('fill', 'transparent')
         currentShape.parentNode.removeChild(currentShape);
         currentShape = shape;
         var box = SVGTools.getBox(currentShape);
@@ -761,6 +763,22 @@ export default class PaintAction {
             return;
         }
         Camera.startFeed(currentShape);
+        ScratchJr.onBackButtonCallback.push(function () {
+            Paint.closeCameraMode();
+        });
+    }
+
+    static imageMouseUp (evt) {
+        if (isTablet) {
+            PaintAction.fingerUp(evt);
+        }
+        if (currentShape == undefined) {
+            return;
+        }
+        currentShape.setAttribute('fill', 'transparent')
+
+        FileHandler.openSprite(currentShape);
+
         ScratchJr.onBackButtonCallback.push(function () {
             Paint.closeCameraMode();
         });
@@ -1152,7 +1170,8 @@ let cmdForMouseDown = {
     'paintbucket': PaintAction.fingerDown,
     'stamper': PaintAction.cloneMouseDown,
     'scissors': PaintAction.cloneMouseDown,
-    'camera': PaintAction.fingerDown
+    'camera': PaintAction.fingerDown,
+    'image': PaintAction.fingerDown
 };
 
 let cmdForMouseMove = {
@@ -1166,7 +1185,8 @@ let cmdForMouseMove = {
     'paintbucket': PaintAction.paintBucketMouseMove,
     'stamper': PaintAction.cloneMouseMove,
     'scissors': PaintAction.cloneMouseMove,
-    'camera': PaintAction.fingerMove
+    'camera': PaintAction.fingerMove,
+    'image': PaintAction.fingerMove
 };
 
 let cmdForMouseUp = {
@@ -1180,7 +1200,8 @@ let cmdForMouseUp = {
     'paintbucket': PaintAction.paintBucketMouseUp,
     'stamper': PaintAction.ignoreEvt,
     'scissors': PaintAction.scissorsMouseUp,
-    'camera': PaintAction.cameraMouseUp
+    'camera': PaintAction.cameraMouseUp,
+    'image': PaintAction.imageMouseUp
 };
 
 let cmdForClick = {
@@ -1194,5 +1215,6 @@ let cmdForClick = {
     'paintbucket': PaintAction.paintBucketClick,
     'stamper': PaintAction.cloneMouseUp,
     'scissors': PaintAction.ignoreEvt,
-    'camera': PaintAction.ignoreEvt
+    'camera': PaintAction.ignoreEvt,
+    'image': PaintAction.ignoreEvt
 };

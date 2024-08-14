@@ -451,6 +451,7 @@ export default class UI {
         sprites.setAttribute('id', 'library');
         //scrolling area
         var p = newHTML('div', 'spritethumbs', sprites);
+        p.setAttribute('id', 'spritesList')
         var div = newHTML('div', 'spritecc', p);
         div.setAttribute('id', 'spritecc');
         div.onmousedown = UI.spriteThumbsActions;

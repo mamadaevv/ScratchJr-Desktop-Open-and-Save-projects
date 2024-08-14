@@ -302,7 +302,8 @@ spriteform.off {visibility: hidden; };
     display: inline-block;
     position: absolute;
     margin: ${css_vh(0.65)} ${css_vh(0.00)} ${css_vh(0.65)};
-    height: ${css_vh(16.67)};
+    /* height: ${css_vh(16.67)}; */
+    height: 290px;
 }
 
 *.paintpalette.short#selectortools {
@@ -438,11 +439,20 @@ spriteform.off {visibility: hidden; };
     background-size: 100%;
 }
 
+*.tool.image.off {
+    background: url('../assets/paint/snapOff.svg') no-repeat center top;
+    background-size: 100%;
+}
+*.tool.image.on {
+    background: url('../assets/paint/snapOn.svg') no-repeat center top;
+    background-size: 100%;
+}
 
 *.paintpalette   hr{
     position: relative;
     margin: 0 auto;
-    height: ${css_vh(0.26)};
+    /* height: ${css_vh(0.26)}; */
+    height: 290px;
     border: 0;
     box-shadow: inset 0 ${4 * scaleMultiplier}px ${4 * scaleMultiplier}px -${4 * scaleMultiplier}px rgba(166, 168, 171, 0.7);
 }

@@ -9,6 +9,7 @@ import Localization from '../../utils/Localization';
 import ScratchAudio from '../../utils/ScratchAudio';
 import {gn, newHTML, scaleMultiplier,
     getDocumentWidth, getDocumentHeight, setProps, newCanvas, frame} from '../../utils/lib';
+import FileHandler from '../../../fileHandler';
 
 let selectedOne;
 let nativeJr = true;
@@ -71,6 +72,7 @@ export default class Library {
             e.initTouchEvent();
             Library.cancelPick(e);
         });
+
     }
 
     static clean () {
@@ -88,6 +90,12 @@ export default class Library {
         libFrame.className = 'libframe disappear';
         document.body.scrollTop = 0;
         frame.style.display = 'block';
+        var a = document.getElementById('spritesList').scrollHeight;
+        console.log(a);
+        console.log(a.scrollHeight)
+        console.log(a.scrollTop)
+        
+        a.scrollTop = a.scrollHeight
         ScratchJr.editorEvents();
         ScratchJr.onBackButtonCallback.pop();
     }

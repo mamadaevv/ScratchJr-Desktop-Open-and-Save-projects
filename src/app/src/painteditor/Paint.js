@@ -416,7 +416,7 @@ export default class Paint {
         if (Camera.active) {
             Camera.doAction(t.getAttribute('key'));
         } else {
-            var tools = ['select', 'rotate', 'stamper', 'scissors', 'camera', 'paintbucket'];
+            var tools = ['select', 'rotate', 'stamper', 'scissors', 'image', 'camera', 'paintbucket'];
             if (tools.indexOf(t.getAttribute('key')) > -1) {
                 ScratchAudio.sndFX('tap.wav');
             }
@@ -762,7 +762,7 @@ export default class Paint {
         Paint.addSidePalette(rightpal, 'selectortools', ['select', 'rotate']);
         Paint.addSidePalette(rightpal, 'edittools', ['stamper', 'scissors']);
         Paint.addSidePalette(rightpal, 'filltools',
-            (iOS.camera == '1' && Camera.available) ? ['camera', 'paintbucket'] : ['paintbucket']);
+            (iOS.camera == '1' && Camera.available) ? [ 'image', 'camera', 'paintbucket'] : [ 'image', 'paintbucket']);
     }
 
     static addSidePalette (p, id, list) {

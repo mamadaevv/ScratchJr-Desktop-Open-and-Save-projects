@@ -6,6 +6,7 @@ import ScratchAudio from './src/utils/ScratchAudio';
 import Project from './src/editor/ui/Project';
 import Home from './src/lobby/Home';
 import iOS from './src/iPad/iOS';
+import Camera from './src/painteditor/Camera';
 
 export default class FileHandler {
 
@@ -42,7 +43,6 @@ export default class FileHandler {
                 openedProject.thumbnail = JSON.parse(openedProject.thumbnail);
             }
 
-
             for (let i = 0; i < openedFile.projectfiles.length; i++) {
                 var json = {};
                 var keylist = ['MD5', 'CONTENTS'];
@@ -52,8 +52,6 @@ export default class FileHandler {
                 json.stmt = 'insert into PROJECTFILES (' + keylist.toString() + ') values (' + values + ')';
                 iOS.stmt(json);
             }
-
-
 
             IO.createProject(openedProject, Home.gotoEditor);
             ScratchJr.saveProject();
@@ -81,14 +79,11 @@ export default class FileHandler {
                 return;
             }
             let data = Project.metadata;
-
-            const projectData = JSON.parse(data.json)
+            const projectData = typeof data.json == 'object' ? data.json : JSON.parse(data.json)
           
             let projectfiles = []
             for (var pageData in projectData) {
                 
-                console.log(projectData[pageData])
-
                 if (projectData[pageData].md5 == undefined) {
                     continue;
                 }
@@ -121,6 +116,35 @@ export default class FileHandler {
     
             }
             fs.writeFileSync(filePath, JSON.stringify({project:data, projectfiles:projectfiles}), 'utf-8');
+        });
+    }
+
+    static openSprite(feedTarget) {
+        Camera.startFeed(feedTarget, true);
+
+        remote.dialog.showOpenDialog(remote.getCurrentWindow(),{
+            title: 'Открыть изображение',
+            buttonLabel: 'Открыть',
+            filters: [
+                { name: 'Изображение', extensions: ['png', 'jpg', 'jpeg'] }
+            ],
+            properties: ['openFile']
+        }, (filePath) => {
+            if (!filePath) {
+                return;
+            }
+            
+            const fs = require('fs');
+            const data = fs.readFileSync(filePath[0]);
+            const blob = new Blob([data], { type: 'image/png' });
+
+            var fileReader = new FileReader();
+            fileReader.readAsDataURL(blob);
+            fileReader.onloadend = function () {
+                let base64string = fileReader.result;
+                console.log(base64string)
+                Camera.processimage(base64string.split(',')[1])
+            }
         });
     }
 }
