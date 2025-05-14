@@ -164,7 +164,7 @@ export default class SVGImage {
             var y = Number(image.getAttribute('y'));
             var width = Number(image.getAttribute('width'));
             var height = Number(image.getAttribute('height'));
-            c.fillStyle = 'red';
+            c.fillStyle = 'transparent';
             c.fillRect(x, y, width, height);
             c.save();
             c.translate(center.x, center.y);

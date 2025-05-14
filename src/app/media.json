@@ -46,7 +46,7 @@
     ],
     "sprites": [
     	{"md5":"Blue.svg","width":151,"height":253,"ext":"svg","name":"Tic","order":"characters,02 funky","tags":["characters","02 funky"]},
-    	{"md5":"ScratchCat.svg","width":213,"height":253,"ext":"svg","name":"Cat","order":"characters,02 funky","tags":["characters","02 funky"]},
+    	{"md5":"ScratchCat.svg","width":150,"height":150,"ext":"svg","name":"Cat","order":"characters,02 funky","tags":["characters","02 funky"]},
     	{"md5":"Purple.svg","width":161,"height":185,"ext":"svg","name":"Tac","order":"characters,02 funky","tags":["characters","02 funky"]},
     	{"md5":"Red.svg","width":213,"height":198,"ext":"svg","name":"Toc","order":"characters,02 funky","tags":["characters","02 funky"]},
     	{"md5":"Dragon.svg","width":577,"height":532,"ext":"svg","name":"Dragon","order":"characters,02 funky","tags":["characters","04 magic"]},

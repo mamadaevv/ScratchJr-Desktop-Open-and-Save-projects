@@ -90,6 +90,7 @@ export default class Project {
         ScratchJr.log('got project metadata', ScratchJr.getTime(), 'sec');
         var data = JSON.parse(str)[0];
         metadata = IO.parseProjectData(data);
+        console.log('----------', metadata)
         mediaCount = -1;
         if (metadata.json) {
             Project.loadData(metadata.json, doneProjectLoad);
@@ -348,6 +349,7 @@ export default class Project {
     }
 
     static recreateObject (page, name, data, callBack, active) {
+        console.log(data)
         var list = data.scripts;
         //delete data.scripts;
         var spr;
@@ -372,6 +374,7 @@ export default class Project {
             // load scripts
             var sc = gn(name + '_scripts').owner;
             for (var j = 0; j < list.length; j++) {
+                console.log(list[j])
                 sc.recreateStrip(list[j]);
             }
             if (active) {

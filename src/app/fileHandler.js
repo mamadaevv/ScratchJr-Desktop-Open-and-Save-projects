@@ -52,7 +52,7 @@ export default class FileHandler {
                 json.stmt = 'insert into PROJECTFILES (' + keylist.toString() + ') values (' + values + ')';
                 iOS.stmt(json);
             }
-
+            console.log(openedProject)
             IO.createProject(openedProject, Home.gotoEditor);
             ScratchJr.saveProject();
         });
@@ -80,16 +80,60 @@ export default class FileHandler {
             }
             let data = Project.metadata;
             const projectData = typeof data.json == 'object' ? data.json : JSON.parse(data.json)
-          
+            console.log(projectData)
+            console.log(data)
             let projectfiles = []
-            for (var pageData in projectData) {
+            data.json = JSON.parse(data.json);
+            const md5List = [];
+
+            function extractMD5(obj) {
+                if (typeof obj !== 'object' || obj === null) return;
+            
+                if ('md5' in obj) {
+                    md5List.push(obj.md5);
+                }
+            
+                for (const key in obj) {
+                    if (typeof obj[key] === 'object') {
+                        extractMD5(obj[key]);
+                    }
+                }
+            }
+            
+            extractMD5(projectData);
+            console.log(md5List)
+
+            for (var md5 of md5List) {
+               getMD5Content(md5)
+            }
+
+            
+            function getMD5Content(md5) {
+                const json = {};
+                json.stmt = `select * from PROJECTFILES where MD5='${md5}'`;
                 
+                function result (res) {
+                    let resObj = JSON.parse(res)
+                    console.log(resObj)
+                    if (resObj.length > 0) {
+                        projectfiles.push({MD5: resObj[0].MD5, CONTENTS: resObj[0].CONTENTS})
+                    }
+                }
+            
+                iOS.query(json, result);
+            }
+
+            /* for (var pageData in projectData) {
+                console.log(projectData[pageData])
+                console.log(projectData[pageData].md5)
                 if (projectData[pageData].md5 == undefined) {
                     continue;
                 }
                 getMD5Content(projectData[pageData].md5)
                 
                 for (var pageValues in projectData[pageData]) {
+                    console.log(projectData[pageData][pageValues])
+                    console.log(projectData[pageData][pageValues].md5)
                     console.log(pageValues + ": " + JSON.stringify(projectData[pageData][pageValues]));
                
                     if (projectData[pageData][pageValues].md5 == undefined) {
@@ -114,7 +158,7 @@ export default class FileHandler {
                     iOS.query(json, result);
                 }
     
-            }
+            } */
             fs.writeFileSync(filePath, JSON.stringify({project:data, projectfiles:projectfiles}), 'utf-8');
         });
     }
@@ -135,14 +179,22 @@ export default class FileHandler {
             }
             
             const fs = require('fs');
+            
             const data = fs.readFileSync(filePath[0]);
+
+            const maxFileSize = 5 * 1024 * 1024; // Максимальный размер файла в байтах (5 МБ)
+
+            if (data.length > maxFileSize) {
+                alert('Изображение слишком большое, попробуй другое');
+                return;
+            }
+
             const blob = new Blob([data], { type: 'image/png' });
 
             var fileReader = new FileReader();
             fileReader.readAsDataURL(blob);
             fileReader.onloadend = function () {
                 let base64string = fileReader.result;
-                console.log(base64string)
                 Camera.processimage(base64string.split(',')[1])
             }
         });

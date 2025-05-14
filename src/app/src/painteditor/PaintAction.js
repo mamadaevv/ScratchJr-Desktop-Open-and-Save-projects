@@ -776,7 +776,7 @@ export default class PaintAction {
             return;
         }
         currentShape.setAttribute('fill', 'transparent')
-
+        currentShape.setAttribute('stroke', 'rgba(255, 0, 0, 0)')
         FileHandler.openSprite(currentShape);
 
         ScratchJr.onBackButtonCallback.push(function () {

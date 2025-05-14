@@ -90,12 +90,6 @@ export default class Library {
         libFrame.className = 'libframe disappear';
         document.body.scrollTop = 0;
         frame.style.display = 'block';
-        var a = document.getElementById('spritesList').scrollHeight;
-        console.log(a);
-        console.log(a.scrollHeight)
-        console.log(a.scrollTop)
-        
-        a.scrollTop = a.scrollHeight
         ScratchJr.editorEvents();
         ScratchJr.onBackButtonCallback.pop();
     }

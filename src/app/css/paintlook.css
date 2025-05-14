@@ -440,11 +440,11 @@ spriteform.off {visibility: hidden; };
 }
 
 *.tool.image.off {
-    background: url('../assets/paint/snapOff.svg') no-repeat center top;
+    background: url('../assets/paint/ImgOff.svg') no-repeat center top;
     background-size: 100%;
 }
 *.tool.image.on {
-    background: url('../assets/paint/snapOn.svg') no-repeat center top;
+    background: url('../assets/paint/ImgOn.svg') no-repeat center top;
     background-size: 100%;
 }
 

@@ -52,6 +52,7 @@ export default class Page {
         }
         var list = data.sprites;
         for (var j = 0; j < list.length; j++) {
+            console.log(data)
             Project.recreateObject(this, list[j], data[list[j]], checkCount);
         }
         for (var i = 0; i < data.layers.length; i++) {
@@ -301,6 +302,7 @@ export default class Page {
     }
 
     drawSpriteImage (ctx, img, spr, scale) {
+
         if (!spr.shown) {
             return;
         }
