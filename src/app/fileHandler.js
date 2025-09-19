@@ -11,11 +11,14 @@ import Camera from './src/painteditor/Camera';
 export default class FileHandler {
 
     static openProjectFromFile () {
+        console.log('=== openProjectFromFile ВЫЗВАН ===');
         remote.dialog.showOpenDialog(remote.getCurrentWindow(),{
             title: 'Открыть проект',
             buttonLabel: 'Открыть',
             filters: [
-                { name: 'Проект ScratchJr', extensions: ['algo'] },
+                { name: 'Проект ScratchJr', extensions: ['algo', 'sjr'] },
+                { name: 'Файлы algo', extensions: ['algo'] },
+                { name: 'Файлы sjr', extensions: ['sjr'] },
                 { name: 'Все файлы', extensions: ['*'] }
             ],
             properties: ['openFile']
@@ -28,34 +31,69 @@ export default class FileHandler {
     }
 
     static prepareOpenedFile(filePath) {
-        fs.readFile(filePath, 'utf8', (err, data) => {
-            if (err) {
-                return;
-            }
-            var openedFile = JSON.parse(data)
-            console.log(openedFile)
+        console.log('=== prepareOpenedFile вызван ===');
+        console.log('Путь к файлу:', filePath);
         
-            var openedProject = openedFile.project;
-            if (typeof openedProject.json === 'string') {
-                openedProject.json = JSON.parse(openedProject.json);
-            }
-            if (typeof openedProject.thumbnail === 'string') {
-                openedProject.thumbnail = JSON.parse(openedProject.thumbnail);
-            }
+        const extension = filePath.split('.').pop().toLowerCase();
+        console.log('Расширение файла:', extension);
+        
+        if (extension === 'sjr') {
+            console.log('=== Обрабатываем SJR файл ===');
+            // Обработка sjr файлов (ZIP архивы)
+            fs.readFile(filePath, (err, data) => {
+                if (err) {
+                    console.error('Ошибка чтения sjr файла:', err);
+                    return;
+                }
+                console.log('SJR файл прочитан, размер:', data.length, 'байт');
+                
+                // Конвертируем Buffer в base64 строку для loadProjectFromSjr
+                const base64Data = data.toString('base64');
+                console.log('Base64 данные готовы, длина:', base64Data.length);
+                
+                try {
+                    console.log('Вызываем IO.loadProjectFromSjr...');
+                    IO.loadProjectFromSjr(base64Data);
+                } catch (error) {
+                    console.error('Ошибка загрузки sjr проекта:', error);
+                }
+            });
+        } else {
+            // Обработка algo файлов (JSON)
+            fs.readFile(filePath, 'utf8', (err, data) => {
+                if (err) {
+                    console.error('Ошибка чтения algo файла:', err);
+                    return;
+                }
+                try {
+                    var openedFile = JSON.parse(data)
+                    console.log(openedFile)
+                
+                    var openedProject = openedFile.project;
+                    if (typeof openedProject.json === 'string') {
+                        openedProject.json = JSON.parse(openedProject.json);
+                    }
+                    if (typeof openedProject.thumbnail === 'string') {
+                        openedProject.thumbnail = JSON.parse(openedProject.thumbnail);
+                    }
 
-            for (let i = 0; i < openedFile.projectfiles.length; i++) {
-                var json = {};
-                var keylist = ['MD5', 'CONTENTS'];
-                var values = '?,?';
-                json.values = [openedFile.projectfiles[i].MD5, openedFile.projectfiles[i].CONTENTS];
-        
-                json.stmt = 'insert into PROJECTFILES (' + keylist.toString() + ') values (' + values + ')';
-                iOS.stmt(json);
-            }
-            console.log(openedProject)
-            IO.createProject(openedProject, Home.gotoEditor);
-            ScratchJr.saveProject();
-        });
+                    for (let i = 0; i < openedFile.projectfiles.length; i++) {
+                        var json = {};
+                        var keylist = ['MD5', 'CONTENTS'];
+                        var values = '?,?';
+                        json.values = [openedFile.projectfiles[i].MD5, openedFile.projectfiles[i].CONTENTS];
+                
+                        json.stmt = 'insert into PROJECTFILES (' + keylist.toString() + ') values (' + values + ')';
+                        iOS.stmt(json);
+                    }
+                    console.log(openedProject)
+                    IO.createProject(openedProject, Home.gotoEditor);
+                    ScratchJr.saveProject();
+                } catch (error) {
+                    console.error('Ошибка обработки algo файла:', error);
+                }
+            });
+        }
     }
 
     static saveProjectAs(e) {

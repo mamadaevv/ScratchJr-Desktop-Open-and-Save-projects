@@ -5,6 +5,8 @@ import MediaLib from './MediaLib';
 import {setCanvasSize, drawThumbnail, gn} from '../utils/lib';
 import Lobby from '../lobby/Lobby';
 import SVG2Canvas from '../utils/SVG2Canvas';
+import Home from '../lobby/Home';
+import ScratchJr from '../editor/ScratchJr';
 
 const database = 'projects';
 const collectLibraryAssets = false;
@@ -519,15 +521,248 @@ export default class IO {
 
     // Receive a base64-encoded zip from iOS (upon open a project)
     static loadProjectFromSjr (b64data) {
-        // Together, these two provide a "progress" indication
-        // that lets us know when to refresh the lobby (when sE/sA = 1)
-        var saveExpected = 0; // How many assets we expect to save - updated as we process the zip
-        var saveActual = 0; // How many assets actually saved - updated as we make IO saves
+        console.log('=== loadProjectFromSjr ВЫЗВАН ===');
+        console.log('Base64 data length:', b64data.length);
 
-        var receivedZip = JSZip();
-        receivedZip.load(b64data, {
+        JSZip.loadAsync(b64data, {
             'base64': true
+        }).then(function(zip) {
+            console.log('JSZip успешно загружен');
+            console.log('Файлы в архиве:', Object.keys(zip.files));
+            
+            // Сначала найдем и обработаем data.json
+            var dataJsonFile = zip.files['project/data.json'] || zip.files['data.json'];
+            if (!dataJsonFile) {
+                console.error('data.json не найден в архиве');
+                return;
+            }
+            
+            console.log('Найден data.json, читаем...');
+            return dataJsonFile.async("text").then(function(jsonText) {
+                console.log('data.json прочитан, размер:', jsonText.length);
+                var jsonData = JSON.parse(jsonText);
+                console.log('JSON распарсен:', jsonData.name);
+                
+                // Создаем проект с уникальным именем и отмечаем как подарок
+                IO.uniqueProjectName(jsonData, function (uniqueJsonData) {
+                    uniqueJsonData.isgift = '1';
+                    console.log('Создаем проект:', uniqueJsonData.name);
+                    IO.createProject(uniqueJsonData, function (projectId) {
+                        console.log('Проект создан с ID:', projectId);
+                        
+                        // Загружаем ассеты и потом открываем проект
+                        IO.processAssetsFromZip(zip, jsonData, function() {
+                            console.log('Все ассеты загружены, открываем проект с ID:', projectId);
+                            Home.gotoEditor(projectId);
+                            ScratchJr.saveProject();
+                        });
+                    });
+                });
+            });
+        }).catch(function(error) {
+            console.error('Ошибка при обработке SJR файла:', error);
         });
+    }
+
+    static processAssetsFromZip(zip, jsonData, completionCallback) {
+        console.log('=== processAssetsFromZip НАЧАЛО ===');
+        
+        // Подготавливаем карту имен персонажей из JSON данных
+        var characterNames = {};
+        var projectData = jsonData.json;
+        if (projectData && projectData.pages) {
+            for (var p = 0; p < projectData.pages.length; p++) {
+                var pageRef = projectData.pages[p];
+                var page = projectData[pageRef];
+                if (page && page.sprites) {
+                    for (var s = 0; s < page.sprites.length; s++) {
+                        var spriteRef = page.sprites[s];
+                        var sprite = page[spriteRef];
+                        if (sprite && sprite.type == 'sprite' && sprite.md5) {
+                            var cleanName = (unescape(sprite.name || 'Character')).replace(/[0-9]/g, '').replace(/\s*/g, '');
+                            characterNames[sprite.md5] = cleanName || 'Character';
+                        }
+                    }
+                }
+            }
+        }
+        console.log('Карта имен персонажей:', characterNames);
+        
+        // Обрабатываем каждый файл в архиве
+        var filesProcessed = 0;
+        var totalFiles = 0;
+        
+        // Подсчитаем сколько файлов нужно обработать
+        for (var fileName in zip.files) {
+            var file = zip.files[fileName];
+            if (!file.dir && fileName !== 'project/data.json' && fileName !== 'data.json') {
+                totalFiles++;
+            }
+        }
+        
+        console.log('Всего файлов для обработки:', totalFiles);
+        
+        if (totalFiles === 0) {
+            console.log('Нет файлов для обработки, вызываем completion callback');
+            completionCallback();
+            return;
+        }
+        
+        // Обрабатываем каждый файл
+        for (var fileName in zip.files) {
+            var file = zip.files[fileName];
+            
+            // Пропускаем директории и data.json
+            if (file.dir || fileName === 'project/data.json' || fileName === 'data.json') {
+                continue;
+            }
+            
+            console.log('Обрабатываем файл:', fileName);
+            
+            // Определяем тип файла по пути
+            var fileBaseName = fileName.split('/').pop();
+            var fileType = '';
+            
+            if (fileName.includes('/backgrounds/')) {
+                fileType = 'background';
+            } else if (fileName.includes('/characters/')) {
+                fileType = 'character';  
+            } else if (fileName.includes('/thumbnails/')) {
+                fileType = 'thumbnail';
+            } else if (fileName.includes('/sounds/')) {
+                fileType = 'sound';
+            } else {
+                console.log('Неизвестный тип файла:', fileName, '- пропускаем');
+                filesProcessed++;
+                continue;
+            }
+            
+            // Обрабатываем файл асинхронно
+            IO.processSingleAssetFile(file, fileBaseName, fileType, characterNames, function() {
+                filesProcessed++;
+                console.log('Файл обработан, прогресс:', filesProcessed, '/', totalFiles);
+                
+                // Если все файлы обработаны
+                if (filesProcessed >= totalFiles) {
+                    console.log('=== Все ассеты загружены ===');
+                    completionCallback();
+                }
+            });
+        }
+    }
+    
+    static processSingleAssetFile(file, fileName, fileType, characterNames, callback) {
+        console.log('Обрабатываем отдельный файл:', fileName, 'тип:', fileType);
+        
+        file.async("binarystring").then(function(data) {
+            var base64Data = btoa(data);
+            console.log('Файл прочитан:', fileName, 'размер:', data.length);
+            
+            // Сохраняем в PROJECTFILES (как делает Java код)
+            iOS.setmedianame(base64Data, fileName.split('.')[0], fileName.split('.').pop(), function() {
+                console.log('Файл сохранен в PROJECTFILES:', fileName);
+                
+                // Дополнительная обработка в зависимости от типа
+                if (fileType === 'background') {
+                    IO.saveBackgroundAsset(fileName, data, callback);
+                } else if (fileType === 'character') {
+                    IO.saveCharacterAsset(fileName, data, characterNames[fileName] || 'Character', callback);
+                } else {
+                    // Для thumbnails и sounds просто вызываем callback
+                    callback();
+                }
+            });
+        }).catch(function(error) {
+            console.error('Ошибка обработки файла', fileName, ':', error);
+            callback(); // Все равно продолжаем
+        });
+    }
+    
+    static saveBackgroundAsset(fileName, svgData, callback) {
+        console.log('Сохраняем background:', fileName);
+        
+        // Создаем thumbnail для background
+        var thumbnailDataURL = IO.getThumbnail(svgData, 480, 360, 120, 90);
+        var thumbnailBase64 = thumbnailDataURL.split(',')[1];
+        
+        iOS.setmedia(thumbnailBase64, 'png', function(thumbnailMD5) {
+            // Проверяем не существует ли уже такой background
+            var json = {};
+            json.cond = 'ext = ? AND md5 = ? AND altmd5 = ?';
+            json.items = ['*'];
+            json.values = ['svg', fileName, thumbnailMD5];
+            json.order = 'ctime desc';
+            
+            IO.query('userbkgs', json, function(results) {
+                results = JSON.parse(results);
+                if (results.length == 0) {
+                    // Добавляем новый background
+                    var insertJson = {};
+                    var keylist = ['md5', 'altmd5', 'version', 'width', 'height', 'ext'];
+                    var values = '?,?,?,?,?,?';
+                    insertJson.values = [fileName, thumbnailMD5, 'iOSv01', '480', '360', 'svg'];
+                    insertJson.stmt = 'insert into userbkgs (' + keylist.toString() + ') values (' + values + ')';
+                    
+                    iOS.stmt(insertJson, function() {
+                        console.log('Background сохранен в userbkgs:', fileName);
+                        callback();
+                    });
+                } else {
+                    console.log('Background уже существует:', fileName);
+                    callback();
+                }
+            });
+        });
+    }
+    
+    static saveCharacterAsset(fileName, svgData, characterName, callback) {
+        console.log('Сохраняем character:', fileName, 'имя:', characterName);
+        
+        // Парсим SVG для получения размеров
+        var svgParser = new DOMParser().parseFromString(svgData, 'text/xml');
+        var svgElement = svgParser.getElementsByTagName('svg')[0];
+        var width = svgElement ? (svgElement.width.baseVal.value || 194) : 194;
+        var height = svgElement ? (svgElement.height.baseVal.value || 306) : 306;
+        var scale = '0.5';
+        
+        // Обрабатываем изображения в SVG
+        IO.getImagesInSVG(svgData, function() {
+            // Создаем thumbnail
+            var thumbnailDataURL = IO.getThumbnail(svgData, width, height, 120, 90);
+            var thumbnailBase64 = thumbnailDataURL.split(',')[1];
+            
+            iOS.setmedia(thumbnailBase64, 'png', function(thumbnailMD5) {
+                // Проверяем не существует ли уже такой character
+                var json = {};
+                json.cond = 'ext = ? AND md5 = ? AND altmd5 = ? AND name = ? AND scale = ? AND width = ? AND height = ?';
+                json.items = ['*'];
+                json.values = ['svg', fileName, thumbnailMD5, characterName, scale, width.toString(), height.toString()];
+                json.order = 'ctime desc';
+                
+                IO.query('usershapes', json, function(results) {
+                    results = JSON.parse(results);
+                    if (results.length == 0) {
+                        // Добавляем новый character
+                        var insertJson = {};
+                        var keylist = ['scale', 'md5', 'altmd5', 'version', 'width', 'height', 'ext', 'name'];
+                        var values = '?,?,?,?,?,?,?,?';
+                        insertJson.values = [scale, fileName, thumbnailMD5, 'iOSv01', width.toString(), height.toString(), 'svg', characterName];
+                        insertJson.stmt = 'insert into usershapes (' + keylist.toString() + ') values (' + values + ')';
+                        
+                        iOS.stmt(insertJson, function() {
+                            console.log('Character сохранен в usershapes:', fileName);
+                            callback();
+                        });
+                    } else {
+                        console.log('Character уже существует:', fileName);
+                        callback();
+                    }
+                });
+            });
+        });
+    }
+
+    static processLoadedZip(receivedZip, saveExpected, saveActual) {
 
         // To store character MD5 -> character name map
         // The character name is stored in the project JSON; when we load
@@ -535,16 +770,24 @@ export default class IO {
         var characterNames = {};
 
         // First find the data.json project file
-        
-        // REVIEW: this used to be recievedZip.filter but was never returning false to filter anything...  
-        // switching to forEach instead.
+        var dataJsonFile = null;
         receivedZip.forEach(function (relativePath, file) { 
             if (file.dir) {
                 return;
             }
             var fullName = relativePath.split('/').pop();
             if (fullName == 'data.json') {
-                var jsonData = JSON.parse(file.asText());
+                dataJsonFile = file;
+            }
+        });
+
+        if (!dataJsonFile) {
+            throw new Error('data.json файл не найден в sjr архиве');
+        }
+
+        // Читаем data.json асинхронно
+        dataJsonFile.async("text").then(function(jsonText) {
+            var jsonData = JSON.parse(jsonText);
 
                 // To require an upgrade, change the major version numbers in .html files and here...
                 var currentVersion = 1;
@@ -575,49 +818,82 @@ export default class IO {
                         }
                     }
                 }
-            }
+
+            // После обработки data.json, обрабатываем остальные файлы
+            IO.processAssetFiles(receivedZip, characterNames, saveExpected, saveActual);
+        }).catch(function(error) {
+            console.error('Ошибка обработки data.json:', error);
         });
+    }
+
+    static processAssetFiles(receivedZip, characterNames, saveExpected, saveActual) {
+        console.log('processAssetFiles started');
 
         // Filter out each asset type for storage
         // REVIEW: this used to be recievedZip.filter but was never returning false to filter anything...  
         // switching to forEach instead.
         receivedZip.forEach(function (relativePath, file) { 
+            console.log('Processing file:', relativePath, 'isDir:', file.dir);
+            
             if (file.dir) {
                 return;
             }
             saveExpected++; // We expect to save something for each non-directory
 
             var subFolder = relativePath.split('/')[1]; // should be {backgrounds, characters, thumbnails, sounds}
+            console.log('SubFolder:', subFolder, 'RelativePath:', relativePath);
 
             // Filename processing
             var fullName = relativePath.split('/').pop(); // e.g. Cat.svg
             var name = fullName.split('.')[0]; // e.g. Cat
             var ext = fullName.split('.').pop(); // e.g. svg
+            
+            console.log('File details - name:', name, 'ext:', ext, 'fullName:', fullName);
 
             if (!name || !ext) {
+                console.log('Skipping file with invalid name/ext:', fullName);
                 return;
             }
 
             // Don't save items we already have in the MediaLib
             if (fullName in MediaLib.keys) {
                 saveActual++;
+                console.log('File already exists in MediaLib:', fullName);
                 return;
             }
 
-            // File data and base64-encoded data
-            var data = file.asBinary();
+            // File data and base64-encoded data - теперь асинхронно
+            console.log('Starting async read for:', fullName);
+            file.async("binarystring").then(function(data) {
             var b2data = btoa(data);
+                console.log('File read success:', fullName, 'size:', data.length);
+                IO.processAssetFile(subFolder, name, ext, data, b2data, characterNames, saveActual);
+            }).catch(function(error) {
+                console.error('Ошибка обработки файла ' + fullName + ':', error);
+            });
+        });
+        
+        console.log('processAssetFiles completed, expected:', saveExpected);
+    }
+
+    static processAssetFile(subFolder, name, ext, data, b2data, characterNames, saveActual) {
+        var fullName = name + '.' + ext;
+        console.log('processAssetFile:', fullName, 'subFolder:', subFolder);
 
             if (subFolder == 'thumbnails' || subFolder == 'sounds') {
                 // Save these immediately to the filesystem - no additional processing necessary
+            console.log('Saving', subFolder, 'file:', fullName);
                 iOS.setmedianame(b2data, name, ext, function () {
                     saveActual++;
+                console.log('Saved', subFolder, 'file:', fullName, 'saveActual:', saveActual);
                 });
             } else if (subFolder == 'characters') {
                 // This code is messy - needs a refactor sometime for all the database calls/duplication for bkgs...
+            console.log('Processing character:', fullName);
 
                 // Save the character, generate its thumbnail, and add entry to the database
                 iOS.setmedianame(b2data, name, ext, function () { // Saves the SVG
+                console.log('Character SVG saved:', fullName);
                     // Parse SVG to determine width/height
                     var svgParser = new DOMParser().parseFromString(data, 'text/xml');
                     var width = svgParser.getElementsByTagName('svg')[0].width.baseVal.value;
@@ -669,7 +945,9 @@ export default class IO {
                 });
             } else if (subFolder == 'backgrounds') {
                 // Same idea as characters, but the dimensions are fixed
+            console.log('Processing background:', fullName);
                 iOS.setmedianame(b2data, name, ext, function () {
+                console.log('Background SVG saved:', fullName);
                     IO.getImagesInSVG(data, gotSVGImages);
 
                     function gotSVGImages () {
@@ -704,20 +982,8 @@ export default class IO {
                     }
                 });
             } else {
+            console.log('Unknown subFolder:', subFolder, 'for file:', fullName, '- ignoring');
                 saveActual++; // Ignore this file - someone messed with the SJR...
             }
-        });
-
-        // For updating the Lobby UI - if we're on the lobby page when receiving a project, refresh it
-        function refreshLobby () {
-            if (gn('hometab') !== null) { // Check if we're on the lobby page
-                if (saveActual == saveExpected) {
-                    Lobby.setPage('home');
-                } else { // Waiting for assets to be saved
-                    setTimeout(refreshLobby, 100);
-                }
-            }
-        }
-        refreshLobby();
     }
 }

@@ -19,6 +19,10 @@
         {
             "ext": "algo",
             "description": "ScratchJr project"
+        },
+        {
+            "ext": "sjr",
+            "description": "ScratchJr project"
         }
     ],
     "keywords": [],
