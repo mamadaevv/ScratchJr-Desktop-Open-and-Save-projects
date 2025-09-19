@@ -7,6 +7,7 @@ import Lobby from '../lobby/Lobby';
 import SVG2Canvas from '../utils/SVG2Canvas';
 import Home from '../lobby/Home';
 import ScratchJr from '../editor/ScratchJr';
+import Project from '../editor/ui/Project';
 
 const database = 'projects';
 const collectLibraryAssets = false;
@@ -552,15 +553,194 @@ export default class IO {
                         
                         // Загружаем ассеты и потом открываем проект
                         IO.processAssetsFromZip(zip, jsonData, function() {
-                            console.log('Все ассеты загружены, открываем проект с ID:', projectId);
-                            Home.gotoEditor(projectId);
-                            ScratchJr.saveProject();
+                            console.log('Все ассеты загружены, ждем завершения записи в БД...');
+                            // Даем время всем асинхронным операциям записи в БД завершиться
+                            setTimeout(function() {
+                                console.log('Открываем проект с ID:', projectId);
+                                Home.gotoEditor(projectId);
+                            }, 2000);
                         });
                     });
                 });
             });
         }).catch(function(error) {
             console.error('Ошибка при обработке SJR файла:', error);
+        });
+    }
+
+    // Экспорт текущего проекта в SJR формат для сохранения на диск
+    static exportProjectToSjr(callback) {
+        console.log('=== Начинаем экспорт проекта в SJR ===');
+        
+        // Получаем данные текущего проекта
+        var currentProject = ScratchJr.currentProject;
+        if (!currentProject) {
+            callback(new Error('Нет активного проекта для экспорта'));
+            return;
+        }
+
+        // Получаем метаданные и данные проекта
+        var projectMetadata = {
+            'thumbnails': [],
+            'characters': [],
+            'backgrounds': [],
+            'sounds': []
+        };
+
+        var jsonData = {
+            id: currentProject,
+            name: Project.metadata.name,
+            version: Project.metadata.version || 'iOSv01',
+            mtime: (new Date()).getTime().toString(),
+            ctime: Project.metadata.ctime || new Date().toISOString().slice(0, 19).replace('T', ' '),
+            isgift: Project.metadata.isgift || '0',
+            deleted: 'NO',
+            thumbnail: typeof Project.metadata.thumbnail === 'string' 
+                ? JSON.parse(Project.metadata.thumbnail) 
+                : Project.metadata.thumbnail,
+            json: Project.getProject(ScratchJr.stage.currentPage.id)
+        };
+
+        console.log('Данные проекта собраны:', jsonData.name);
+
+        // Функция для сбора ассетов
+        var collectAsset = function (assetType, md5) {
+            if (md5 && (typeof md5 !== 'undefined')) {
+                // Исключаем только системные образцы, все остальные ассеты включаем
+                if (md5.indexOf('samples/') < 0 && md5 !== 'pop.mp3') {
+                    if (projectMetadata[assetType].indexOf(md5) < 0) {
+                        projectMetadata[assetType].push(md5);
+                        console.log('Добавлен ассет:', assetType, md5);
+                    }
+                }
+            }
+        };
+
+        // Собираем миниатюру проекта
+        if (jsonData.thumbnail && jsonData.thumbnail.md5) {
+            collectAsset('thumbnails', jsonData.thumbnail.md5);
+        }
+
+        var projectData = jsonData.json;
+
+        // Собираем ассеты со всех страниц
+        for (var p = 0; p < projectData.pages.length; p++) {
+            var pageReference = projectData.pages[p];
+            var page = projectData[pageReference];
+
+            // Фон страницы
+            collectAsset('backgrounds', page.md5);
+
+            // Спрайты на странице
+            for (var s = 0; s < page.sprites.length; s++) {
+                var spriteReference = page.sprites[s];
+                var sprite = page[spriteReference];
+
+                if (sprite.type != 'sprite') {
+                    continue;
+                }
+
+                // Изображение спрайта
+                collectAsset('characters', sprite.md5);
+
+                // Звуки спрайта
+                if (sprite.sounds) {
+                    for (var snd = 0; snd < sprite.sounds.length; snd++) {
+                        collectAsset('sounds', sprite.sounds[snd]);
+                    }
+                }
+            }
+        }
+
+        console.log('Найденные ассеты:', projectMetadata);
+
+        // Создаем ZIP архив
+        var zipFile = new JSZip();
+        var projectFolder = zipFile.folder('project');
+        
+        // Создаем все папки (даже если они пустые)
+        projectFolder.folder('thumbnails');
+        projectFolder.folder('characters'); 
+        projectFolder.folder('backgrounds');
+        projectFolder.folder('sounds');
+
+        // Добавляем data.json
+        var projectDataForZip = JSON.stringify(jsonData);
+        zipFile.file('project/data.json', projectDataForZip, {});
+
+        // Подсчитываем ожидаемое количество ассетов
+        var assetsExpected = projectMetadata.thumbnails.length + projectMetadata.characters.length + 
+                           projectMetadata.backgrounds.length + projectMetadata.sounds.length;
+        var assetsProcessed = 0;
+
+        console.log('Ожидаем загрузить ассетов:', assetsExpected);
+
+        if (assetsExpected === 0) {
+            // Нет ассетов для загрузки, генерируем архив
+            IO.generateSjrArchive(zipFile, callback);
+            return;
+        }
+
+        // Функция для добавления медиа в архив
+        var addMediaToZip = function (folder, md5) {
+            var addB64ToZip = function (b64data) {
+                if (b64data) {
+                    zipFile.file('project/' + folder + '/' + md5, b64data, {
+                        base64: true
+                    });
+                    console.log('Добавлен ассет:', folder + '/' + md5, '(', assetsProcessed + 1, '/', assetsExpected, ')');
+                } else {
+                    console.warn('Не удалось получить данные для:', folder + '/' + md5);
+                }
+                
+                assetsProcessed++;
+                
+                // Если все ассеты обработаны, генерируем архив
+                if (assetsProcessed >= assetsExpected) {
+                    console.log('Все ассеты загружены, генерируем SJR...');
+                    IO.generateSjrArchive(zipFile, callback);
+                }
+            };
+
+            // Получаем медиа данные
+            console.log('Получаем данные для:', folder + '/' + md5);
+            iOS.getmedia(md5, addB64ToZip);
+        };
+
+        // Добавляем каждый тип медиа
+        for (var j = 0; j < projectMetadata.thumbnails.length; j++) {
+            addMediaToZip('thumbnails', projectMetadata.thumbnails[j]);
+        }
+
+        for (var k = 0; k < projectMetadata.characters.length; k++) {
+            addMediaToZip('characters', projectMetadata.characters[k]);
+        }
+
+        for (var l = 0; l < projectMetadata.backgrounds.length; l++) {
+            addMediaToZip('backgrounds', projectMetadata.backgrounds[l]);
+        }
+
+        for (var m = 0; m < projectMetadata.sounds.length; m++) {
+            addMediaToZip('sounds', projectMetadata.sounds[m]);
+        }
+    }
+
+    // Генерация финального SJR архива
+    static generateSjrArchive(zipFile, callback) {
+        console.log('Генерируем SJR архив...');
+        
+        zipFile.generateAsync({
+            type: 'uint8array',
+            compression: 'DEFLATE',
+            compressionOptions: {
+                level: 6
+            }
+        }).then(function(zipData) {
+            console.log('SJR архив сгенерирован, размер:', zipData.length, 'байт');
+            callback(null, zipData);
+        }).catch(function(error) {
+            console.error('Ошибка генерации SJR:', error);
+            callback(error);
         });
     }
 

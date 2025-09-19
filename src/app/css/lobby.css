@@ -289,7 +289,7 @@ ul#settings.reference {
 }
 
 /* Localization menu */
-h1.localizationtitle {
+h1.localizationtitle, h1.extensiontitle {
     font-family: Roboto;
     font-size: ${css_vh(4.5)};
     color: #f5a322;
@@ -325,6 +325,45 @@ div.localizationselect.selected {
 }
 
 div.localizationselect.selected:after {
+    display: block;
+    content: ' ';
+    background-image: url('../assets/ui/languageConfirm.svg');
+    background-size: 45px 45px;
+    height: 45px;
+    width: 45px;
+    position: absolute;
+    top: -22.5px;
+    right: -22.5px;
+}
+
+/* Project extension settings */
+div.extensionbuttons {
+    margin: auto;
+    margin-top: ${css_vh(4)};
+    width: 90%;
+}
+
+div.extensionselect {
+    border-radius: 15px;
+    width: ${css_vw(23)};
+    height: 47pt;
+    float: left;
+    position: relative; /* for absolute positioning of pseudo :after element */
+    background-color: #35A8E0;
+    color: #fff;
+    font-size: 34.5px;
+    text-align: center;
+    margin-left: ${css_vw(3)};
+    margin-bottom: ${css_vw(2)};
+    padding-top: 2%;
+    background-image: linear-gradient(0deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.2) 51%);
+}
+
+div.extensionselect.selected {
+    background-color: #F9A737;
+}
+
+div.extensionselect.selected:after {
     display: block;
     content: ' ';
     background-image: url('../assets/ui/languageConfirm.svg');

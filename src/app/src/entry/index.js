@@ -4,11 +4,19 @@ import iOS from '../iPad/iOS';
 import UI from '../editor/ui/UI';
 import Localization from '../utils/Localization';
 import AppUsage from '../utils/AppUsage';
+import Cookie from '../utils/Cookie';
 
 export function indexMain () { // eslint-disable-line import/prefer-default-export
     gn('gettings').onmousedown = indexGettingstarted;
     gn('startcode').onmousedown = indexGohome;
     ScratchAudio.init();
+    
+    // Инициализируем настройку формата проекта по умолчанию
+    if (!Cookie.get('projectExtension')) {
+        Cookie.set('projectExtension', window.Settings.defaultProjectExtension);
+        console.log('Установлен формат проекта по умолчанию:', window.Settings.defaultProjectExtension);
+    }
+    
     var urlvars = getUrlVars();
     if (urlvars.back) {
         indexLoadOptions();

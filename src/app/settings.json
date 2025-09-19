@@ -33,5 +33,10 @@
         "ไทย": "th",
         "简体中文": "zh-cn"
     },
+    "supportedProjectExtensions": {
+        "SJR": "sjr",
+        "ALGO": "algo"
+    },
+    "defaultProjectExtension": "sjr",
     "settingsPageDisabled": false
 }

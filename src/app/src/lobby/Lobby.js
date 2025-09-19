@@ -207,6 +207,45 @@ export default class Lobby {
                 window.location = '?place=gear';
             };
         }
+
+        // Project extension settings
+        var extensionTitle = newHTML('h1', 'extensiontitle', div);
+        extensionTitle.textContent = Localization.localize('SELECT_PROJECT_EXTENSION');
+        extensionTitle.style.marginTop = '40px';
+
+        var extensionButtons = newHTML('div', 'extensionbuttons', div);
+
+        var currentExtension = Cookie.get('projectExtension') || window.Settings.defaultProjectExtension;
+        
+        // Если Cookie не установлен, устанавливаем значение по умолчанию
+        if (!Cookie.get('projectExtension')) {
+            Cookie.set('projectExtension', window.Settings.defaultProjectExtension);
+            currentExtension = window.Settings.defaultProjectExtension;
+        }
+
+        var extensionButton;
+        for (var ext in window.Settings.supportedProjectExtensions) {
+            var selected = '';
+            if (window.Settings.supportedProjectExtensions[ext] == currentExtension) {
+                selected = ' selected';
+            }
+            extensionButton = newHTML('div', 'extensionselect' + selected, extensionButtons);
+            extensionButton.textContent = ext;
+
+            extensionButton.onmousedown = function (e) {
+                ScratchAudio.sndFX('tap.wav');
+                let newExtension = window.Settings.supportedProjectExtensions[e.target.textContent];
+                Cookie.set('projectExtension', newExtension);
+                iOS.analyticsEvent('lobby', 'project_extension_changed', newExtension);
+                
+                // Обновляем выделение без перезагрузки
+                var buttons = extensionButtons.querySelectorAll('.extensionselect');
+                buttons.forEach(function(btn) {
+                    btn.className = 'extensionselect';
+                });
+                e.target.className = 'extensionselect selected';
+            };
+        }
     }
 
     static setSubMenu (page) {
