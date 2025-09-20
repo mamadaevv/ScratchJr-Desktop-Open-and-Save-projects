@@ -1,8 +1,10 @@
 ## Official disclaimer
 Scratch and ScratchJr are trademarks of Massachusetts Institute of Technology, which does not sponsor, endorse, or authorize this content. See scratchjr.org for more information.
 
-## Downloads 
-[Download ScratchJr for Desktop](https://jfo8000.github.io/ScratchJr-Desktop/)
+## Downloads
+Download the latest release from the [Releases](https://github.com/mamadaevv/ScratchJr-Desktop-Open-and-Save-projects/releases) page.
+
+Available for Windows (installer) and source code.
 
 
 ## The geeky stuff
@@ -72,6 +74,7 @@ Also git (which you may already have).
 For windows installers, you must do this from a Windows machine.  Same for Mac.
 
 * <tt>npm run package</tt>
+* <tt>npm run make</tt> - Creates installers (.exe for Windows, .dmg for Mac)
 
 
 ## Running lint
@@ -111,6 +114,18 @@ This repository has the following directory structure:
 * <tt>out/</tt> - Build scripts and other executables
 * <tt>docs/</tt> - Developer Documentation
 
+
+## Creating Releases
+
+To create a new release with installer:
+
+1. Build the application: `npm run make`
+2. Commit and push your changes to the repository
+3. Go to GitHub repository → Releases → Create new release
+4. Tag version (e.g., v1.5.5)
+5. Add release notes describing changes
+6. Upload the installer file (from `out/make/squirrel.windows/x64/` for Windows)
+7. Publish the release
 
 ## Acknowledgments
 
